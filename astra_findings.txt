@@ -1,0 +1,2 @@
+IP: 149.13.0.73, Port: 8000 - Astra Control Panel - http://149.13.0.73:8000
+IP: 111.90.156.121, Port: 80 - Astra Relay - http://111.90.156.121:80

@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Port Scanner</title>
+    <style>
+        :root {
+            --bg-primary: #1a1b1e;
+            --bg-secondary: #2c2d30;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --accent-primary: #4f46e5;
+            --accent-hover: #4338ca;
+            --border-color: #3f3f46;
+            --success-color: #22c55e;
+            --error-color: #ef4444;
+            --warning-color: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            line-height: 1.5;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+            text-align: center;
+            font-weight: 600;
+        }
+
+        h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+
+        #output {
+            white-space: pre-wrap;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            background-color: var(--bg-secondary);
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            height: 400px;
+            overflow-y: auto;
+            color: var(--text-primary);
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        #output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #output::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        #output::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            align-items: stretch;
+        }
+
+        .form-column {
+            flex: 1;
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            width: 100%;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        button:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button.stop {
+            background-color: var(--error-color);
+        }
+
+        button.stop:hover {
+            background-color: #dc2626;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid transparent;
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error {
+            color: var(--error-color);
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background-color: rgba(239, 68, 68, 0.1);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .section {
+            background-color: var(--bg-secondary);
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 1rem;
+            margin: 0.75rem 0;
+            flex-wrap: wrap;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .radio-group label:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .radio-group input[type="radio"] {
+            display: none;
+        }
+
+        .radio-group input[type="radio"]:checked + label {
+            background-color: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            appearance: none;
+            width: 1.2rem;
+            height: 1.2rem;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-primary);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-wrapper input[type="checkbox"]:checked {
+            background-color: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .checkbox-wrapper input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 0.8rem;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .checkbox-wrapper label {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1rem;
+            padding-right: 2.5rem;
+        }
+
+        /* Status indicators in output */
+        .status-success {
+            color: var(--success-color);
+        }
+
+        .status-error {
+            color: var(--error-color);
+        }
+
+        .status-warning {
+            color: var(--warning-color);
+        }
+
+        .help-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        /* Add these styles */
+        #found-portals {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            z-index: 1000;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            display: none;
+        }
+
+        .portal-item {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .portal-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .portal-title {
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .portal-url {
+            color: var(--accent-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+        }
+
+        .portal-url a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .portal-url a:hover {
+            text-decoration: underline;
+        }
+
+        .portal-type {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background-color: var(--accent-primary);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Add styles for textarea */
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+            transition: all 0.2s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+        }
+
+        .example-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            font-style: italic;
+        }
+
+        /* Add these styles */
+        #output-container {
+            position: relative;
+            margin-top: 1.5rem;
+        }
+
+        .output-controls {
+            position: absolute;
+            top: -30px;
+            right: 0;
+            display: flex;
+            gap: 8px;
+        }
+
+        #clear-output,
+        #save-output {
+            padding: 4px 8px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        #clear-output:hover,
+        #save-output:hover {
+            background-color: var(--accent-primary);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Advanced Port Scanner</h1>
+    <div id="error-message" class="error" style="display: none;"></div>
+    
+    <div id="found-portals">
+        <h3>Found Astra Portals</h3>
+        <div id="portals-list"></div>
+    </div>
+
+    <form id="scan-form" onsubmit="return false;">
+        <div class="form-row">
+            <div class="form-column section">
+                <h3>IP Range Selection</h3>
+                <div class="form-group">
+                    <label>IP Range Type</label>
+                    <div class="radio-group">
+                        <input type="radio" id="single" name="range_type" value="single">
+                        <label for="single">Single IP</label>
+                        
+                        <input type="radio" id="cidr" name="range_type" value="cidr">
+                        <label for="cidr">CIDR Range</label>
+                        
+                        <input type="radio" id="range" name="range_type" value="range">
+                        <label for="range">IP Range</label>
+
+                        <input type="radio" id="list" name="range_type" value="list" checked>
+                        <label for="list">IP List</label>
+                    </div>
+                </div>
+                
+                <div id="single-input" class="form-group">
+                    <label for="single_ip">IP Address</label>
+                    <input type="text" id="single_ip" name="single_ip" placeholder="e.g., 192.168.1.1">
+                </div>
+                
+                <div id="cidr-input" class="form-group" style="display:none;">
+                    <label for="cidr_range">CIDR Range</label>
+                    <input type="text" id="cidr_range" name="cidr_range" placeholder="e.g., 192.168.1.0/24">
+                </div>
+                
+                <div id="range-input" class="form-group" style="display:none;">
+                    <label for="start_ip">Start IP</label>
+                    <input type="text" id="start_ip" name="start_ip" placeholder="e.g., 192.168.1.1">
+                    <label for="end_ip">End IP</label>
+                    <input type="text" id="end_ip" name="end_ip" placeholder="e.g., 192.168.1.255">
+                </div>
+
+                <div id="list-input" class="form-group">
+                    <label for="ip_list">IP Addresses (one per line)</label>
+                    <textarea id="ip_list" name="ip_list" placeholder="Enter IP addresses, ranges, or CIDR notations&#10;Examples:&#10;192.168.1.1&#10;10.0.0.0/24&#10;172.16.1.1-172.16.1.10"></textarea>
+                    <div class="example-text">
+                        Supported formats:
+                        • Single IPs (e.g., 192.168.1.1)
+                        • CIDR ranges (e.g., 10.0.0.0/24)
+                        • IP ranges (e.g., 172.16.1.1-172.16.1.10)
+                        • Mix of above, separated by newlines or commas
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-column section">
+                <h3>Scan Options</h3>
+                <div class="form-group">
+                    <label for="scan_type">Scan Type</label>
+                    <select id="scan_type" name="scan_type">
+                        <option value="astra">Astra Cesbo Ports</option>
+                        <option value="quick">Quick Scan (Common ports)</option>
+                        <option value="full">Full Scan (All ports)</option>
+                        <option value="custom">Custom Port Range</option>
+                        <option value="stealth">Stealth Scan</option>
+                        <option value="aggressive">Aggressive Scan</option>
+                    </select>
+                    <div class="help-text" id="scan-type-help">
+                        Astra Cesbo Ports: Main web interfaces (80, 8080), RTSP streaming (554), and alternative ports (5000, 8000-8081)
+                    </div>
+                </div>
+
+                <div id="custom-ports" class="form-group" style="display:none;">
+                    <label for="port_range">Custom Port Range</label>
+                    <input type="text" id="port_range" name="port_range" placeholder="e.g., 80,443,8000-8080">
+                </div>
+
+                <div class="form-group">
+                    <label for="scan_speed">Scan Speed</label>
+                    <select id="scan_speed" name="scan_speed">
+                        <option value="paranoid">Paranoid (0)</option>
+                        <option value="sneaky">Sneaky (1)</option>
+                        <option value="polite">Polite (2)</option>
+                        <option value="normal" selected>Normal (3)</option>
+                        <option value="aggressive">Aggressive (4)</option>
+                        <option value="insane">Insane (5)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Additional Options</label>
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="service_detection" name="service_detection" checked>
+                        <label for="service_detection">Service Detection</label>
+                    </div>
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="skip_discovery" name="skip_discovery" checked>
+                        <label for="skip_discovery">Skip Host Discovery</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" id="scan-button">
+            <span class="spinner" id="scan-spinner"></span>
+            <span class="button-text">Start Scan</span>
+        </button>
+    </form>
+
+    <div id="output-container">
+        <div class="output-controls">
+            <button id="save-output" type="button">Save Logs</button>
+            <button id="clear-output" type="button">Clear Output</button>
+        </div>
+        <div id="output"></div>
+    </div>
+
+    <script>
+        let isScanning = false;
+        let currentEventSource = null;
+        const MAX_OUTPUT_LINES = 1000; // Maximum number of lines to keep
+        const CLEANUP_THRESHOLD = 800; // When to start cleanup
+        let logBuffer = [];  // Store logs in memory
+        const MAX_BUFFER_SIZE = 10000;  // Maximum number of log entries to keep
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = message ? 'block' : 'none';
+        }
+
+        function updateButtonState(scanning) {
+            const button = document.getElementById('scan-button');
+            const spinner = document.getElementById('scan-spinner');
+            const buttonText = button.querySelector('.button-text');
+            
+            isScanning = scanning;
+            
+            if (scanning) {
+                button.classList.add('stop');
+                buttonText.textContent = 'Stop Scan';
+                spinner.style.display = 'block';
+            } else {
+                button.classList.remove('stop');
+                buttonText.textContent = 'Start Scan';
+                spinner.style.display = 'none';
+            }
+        }
+
+        function stopScan() {
+            if (currentEventSource) {
+                currentEventSource.close();
+                currentEventSource = null;
+            }
+            
+            fetch('/stop_scan', {
+                method: 'POST'
+            }).then(response => response.json())
+            .then(data => {
+                updateButtonState(false);
+                if (data.error) {
+                    showError(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                updateButtonState(false);
+            });
+        }
+
+        function appendOutput(content) {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.innerHTML = content;
+            
+            // Add to buffer
+            logBuffer.push(content);
+            if (logBuffer.length > MAX_BUFFER_SIZE) {
+                logBuffer.splice(0, 1000); // Remove oldest 1000 entries when buffer is full
+            }
+            
+            // Add the new content
+            output.appendChild(div);
+            
+            // Check if we need to clean up the DOM
+            const children = output.children;
+            if (children.length > 1000) {
+                // Remove oldest lines until we reach 800
+                while (children.length > 800) {
+                    output.removeChild(children[0]);
+                }
+            }
+            
+            // Scroll to bottom
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function startScan(formData) {
+            updateButtonState(true);
+            showError('');
+            clearOutput(); // This will clear both the display and buffer
+
+            fetch('/', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showError(data.error);
+                    updateButtonState(false);
+                    return;
+                }
+                
+                // Start listening for scan results
+                if (currentEventSource) {
+                    currentEventSource.close();
+                }
+                
+                currentEventSource = new EventSource('/stream');
+                
+                currentEventSource.onmessage = function(event) {
+                    try {
+                        const data = event.data;
+                        const cleanData = data.replace(/^"|"$/g, '');
+                        
+                        // Check if this is a portals update message
+                        if (cleanData.startsWith('FOUND_PORTALS:')) {
+                            const portals = JSON.parse(cleanData.substring('FOUND_PORTALS:'.length));
+                            updateFoundPortals(portals);
+                            return;
+                        }
+                        
+                        // Add color coding for different types of messages
+                        let coloredData = cleanData
+                            .replace(/\[FOUND\]/g, '<span class="status-success">[FOUND]</span>')
+                            .replace(/\[URL\]/g, '<span class="status-success">[URL]</span>')
+                            .replace(/Error/g, '<span class="status-error">Error</span>')
+                            .replace(/Scanning IP:/g, '<span style="color: var(--accent-primary)">Scanning IP:</span>')
+                            .replace(/Port.*is open/g, '<span class="status-success">$&</span>')
+                            .replace(/Scan Complete/g, '<span style="color: var(--success-color)">Scan Complete</span>')
+                            .replace(/Service:.*$/mg, '<span style="color: var(--warning-color)">$&</span>')
+                            .replace(/Version:.*$/mg, '<span style="color: var(--warning-color)">$&</span>')
+                            .replace(/Product:.*$/mg, '<span style="color: var(--warning-color)">$&</span>');
+                        
+                        const output = document.getElementById('output');
+                        const div = document.createElement('div');
+                        div.innerHTML = coloredData;
+                        
+                        // Limit the number of lines in the output
+                        if (output.childNodes.length > 1000) {
+                            // Remove the first 200 lines when we hit 1000 lines
+                            for (let i = 0; i < 200; i++) {
+                                if (output.firstChild) {
+                                    output.removeChild(output.firstChild);
+                                }
+                            }
+                        }
+                        
+                        output.appendChild(div);
+                        output.scrollTop = output.scrollHeight;
+
+                        // Check for scan completion
+                        if (cleanData.includes('Scan Complete')) {
+                            updateButtonState(false);
+                            currentEventSource.close();
+                            currentEventSource = null;
+                        }
+                    } catch (e) {
+                        console.error('Error handling event data:', e);
+                        const output = document.getElementById('output');
+                        const div = document.createElement('div');
+                        div.textContent = event.data;
+                        output.appendChild(div);
+                        output.scrollTop = output.scrollHeight;
+                    }
+                };
+
+                currentEventSource.onerror = function(event) {
+                    console.error('EventSource error:', event);
+                    currentEventSource.close();
+                    currentEventSource = null;
+                    updateButtonState(false);
+                };
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('An error occurred while starting the scan');
+                updateButtonState(false);
+            });
+        }
+
+        // Form submission handler
+        document.getElementById('scan-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (isScanning) {
+                stopScan();
+                return;
+            }
+
+            const formData = new FormData(this);
+            startScan(formData);
+        });
+
+        // Handle IP range type selection
+        document.querySelectorAll('input[name="range_type"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.getElementById('single-input').style.display = 'none';
+                document.getElementById('cidr-input').style.display = 'none';
+                document.getElementById('range-input').style.display = 'none';
+                document.getElementById('list-input').style.display = 'none';
+                document.getElementById(this.value + '-input').style.display = 'block';
+            });
+        });
+
+        // Trigger the change event on the checked radio button to show the correct input initially
+        document.querySelector('input[name="range_type"]:checked').dispatchEvent(new Event('change'));
+
+        // Handle scan type selection
+        document.getElementById('scan_type').addEventListener('change', function() {
+            const helpText = document.getElementById('scan-type-help');
+            const customPorts = document.getElementById('custom-ports');
+            
+            // Update help text based on selection
+            switch(this.value) {
+                case 'astra':
+                    helpText.textContent = 'Astra Cesbo Ports: Main web interfaces (80, 8080), RTSP streaming (554), and alternative ports (5000, 8000-8081)';
+                    break;
+                case 'quick':
+                    helpText.textContent = 'Quick Scan: Common ports only (21-23,25,53,80,110,135,139,443,445,800,1433,3306,3389,5900,8080,8443)';
+                    break;
+                case 'full':
+                    helpText.textContent = 'Full Scan: All ports (1-65535). This will take longer.';
+                    break;
+                case 'custom':
+                    helpText.textContent = 'Custom Range: Specify your own port range (e.g., 80,443,8000-8080)';
+                    break;
+                case 'stealth':
+                    helpText.textContent = 'Stealth Scan: Uses TCP SYN scan, less likely to be detected';
+                    break;
+                case 'aggressive':
+                    helpText.textContent = 'Aggressive Scan: Includes OS detection, version detection, and script scanning';
+                    break;
+            }
+            
+            // Show/hide custom ports input
+            customPorts.style.display = this.value === 'custom' ? 'block' : 'none';
+        });
+
+        // Clean up when leaving the page
+        window.onbeforeunload = function() {
+            if (currentEventSource) {
+                currentEventSource.close();
+            }
+        };
+
+        // Add this function to handle found portals
+        function updateFoundPortals(portals) {
+            const portalsDiv = document.getElementById('found-portals');
+            const portalsList = document.getElementById('portals-list');
+            
+            if (portals.length > 0) {
+                portalsDiv.style.display = 'block';
+                portalsList.innerHTML = portals.map(portal => `
+                    <div class="portal-item">
+                        <div class="portal-type">${portal.type}</div>
+                        <div class="portal-url">
+                            <a href="${portal.url}" target="_blank">${portal.url}</a>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function clearOutput() {
+            const output = document.getElementById('output');
+            output.innerHTML = '';
+            logBuffer = []; // Clear the buffer as well
+        }
+
+        // Add clear output button handler
+        document.getElementById('clear-output').addEventListener('click', clearOutput);
+
+        // Update the save logs function to use the buffer
+        function saveLogs() {
+            try {
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const filename = `scan_log_${timestamp}.txt`;
+                
+                // Create text content from buffer, stripping HTML
+                const tempDiv = document.createElement('div');
+                const logContent = logBuffer.map(log => {
+                    tempDiv.innerHTML = log;
+                    return tempDiv.textContent || tempDiv.innerText;
+                }).join('\n');
+                
+                // Split into chunks if content is large
+                const CHUNK_SIZE = 100000; // 100KB chunks
+                const chunks = [];
+                for (let i = 0; i < logContent.length; i += CHUNK_SIZE) {
+                    chunks.push(logContent.slice(i, i + CHUNK_SIZE));
+                }
+                
+                // Create blob from chunks
+                const blob = new Blob(chunks, { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                
+                document.body.appendChild(a);
+                a.click();
+                
+                // Cleanup
+                setTimeout(() => {
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                }, 100);
+            } catch (error) {
+                console.error('Error saving logs:', error);
+                showError('Error saving logs. Please try again.');
+            }
+        }
+
+        // Add save logs button handler
+        document.getElementById('save-output').addEventListener('click', saveLogs);
+    </script>
+</body>
+</html>
